@@ -28,5 +28,5 @@ Ensure you have **Python 3.11+** and **pip** installed on your system.
 
 ### 1. Clone the Repository
 ```bash
-git clone [https://github.com/YOUR_GITHUB_USERNAME/sclfarmrecordmanagement.git](https://github.com/YOUR_GITHUB_USERNAME/sclfarmrecordmanagement.git)
+git clone [https://github.com/Wilfred1213/sclfarmrecordmanagement.git](https://github.com/Wilfred1213/sclfarmrecordmanagement.git)
 cd sclfarmrecordmanagement
