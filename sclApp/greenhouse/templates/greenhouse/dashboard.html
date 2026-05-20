@@ -1,0 +1,423 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Summary Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 mb-0 text-gray-800">Greenhouse & Field Production</h2>
+            <p class="text-muted small mb-0">Active crop monitoring and organic IPM management</p>
+        </div>
+    </div>
+
+    <!-- Mobile-Responsive Action Buttons -->
+    <div class="row g-2 mb-4">
+        <div class="col-6 col-md-auto">
+            <button class="btn btn-primary w-100 h-100 py-3 py-md-2" data-bs-toggle="modal" data-bs-target="#transplantModal">
+                <i class="fa fa-seedling d-block d-md-inline mb-1 mb-md-0 me-md-2"></i>
+                <span class="small d-block d-md-inline">Log Transplant</span>
+            </button>
+        </div>
+        <div class="col-6 col-md-auto">
+            <button class="btn btn-success w-100 h-100 py-3 py-md-2" data-bs-toggle="modal" data-bs-target="#sprayModal">
+                <i class="fa fa-spray-can d-block d-md-inline mb-1 mb-md-0 me-md-2"></i>
+                <span class="small d-block d-md-inline">Record Spray</span>
+            </button>
+        </div>
+        <div class="col-6 col-md-auto">
+            <button class="btn btn-warning text-dark w-100 h-100 py-3 py-md-2" data-bs-toggle="modal" data-bs-target="#harvestModal">
+                <i class="fa fa-basket-shopping d-block d-md-inline mb-1 mb-md-0 me-md-2"></i>
+                <span class="small d-block d-md-inline font-weight-bold">Record Harvest</span>
+            </button>
+        </div>
+        <div class="col-6 col-md-auto">
+            <button class="btn btn-info text-white w-100 h-100 py-3 py-md-2" data-bs-toggle="modal" data-bs-target="#activityModal">
+                <i class="fa fa-clipboard-list d-block d-md-inline mb-1 mb-md-0 me-md-2"></i>
+                <span class="small d-block d-md-inline font-weight-bold">Log Daily Activity</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Django Messages Framework Alerts -->
+    <!-- GLOBAL REAL-TIME NOTIFICATION TOAST CONTAINER -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1080;">
+        <div id="htmx-toast" class="toast align-items-center text-white border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body font-weight-bold" id="toast-message">
+                    <!-- Message content injected dynamically -->
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    {% comment %} {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %} {% endcomment %}
+    <div id="dashboard-tables-container">
+        <div class="row g-4">
+            <!-- TABLE 1: ACTIVE CROPS PER BAY -->
+            <div class="col-12 col-lg-7">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary"><i class="fa fa-layer-group me-2"></i>Active Cultivation Spaces</h6>
+                        <span class="badge bg-primary rounded-pill">{{ active_batches.count }} Batches</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light text-uppercase fs-7 font-weight-bold text-muted">
+                                    <tr>
+                                        <th class="ps-3">Location</th>
+                                        <th>Crop / Performance Tracking</th>
+                                        <th>Plant Population</th>
+                                        <th>Date Planted</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for batch in active_batches %}
+                                    <tr>
+                                        <td class="ps-3 font-weight-bold text-dark">
+                                            {{ batch.location }}
+                                        </td>
+                                        <td>
+                                            <!-- Crop Type Tags -->
+                                            <div class="mb-2">
+                                                <span class="badge bg-light text-dark border me-1">{{ batch.get_crop_type_display }}</span>
+                                                <small class="text-muted">({{ batch.variety }})</small>
+                                            </div>
+
+                                            <!-- INTEGRATED PRODUCTION PERFORMANCE PROGRESS BAR -->
+                                            <div class="pe-3" style="min-width: 200px;">
+                                                <div class="progress" style="height: 16px; font-size: 10px;">
+                                                    <div class="progress-bar bg-success font-weight-bold" role="progressbar" 
+                                                        style="width: {{ batch.calculate_performance_percentage }}%;" 
+                                                        aria-valuenow="{{ batch.total_harvested_weight }}" 
+                                                        aria-valuemin="0" 
+                                                        aria-valuemax="{{ batch.total_expected_yield }}">
+                                                        {{ batch.total_harvested_weight|default:"0" }} KG picked
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted d-block mt-1 fs-8">
+                                                    Target: <strong>{{ batch.total_expected_yield }} KG</strong> total ({{ batch.expected_yield_per_plant }} KG/plant)
+                                                </small>
+                                            </div>
+                                        </td>
+                                        <td>{{ batch.plant_count }} seedlings</td>
+                                        <td class="text-muted fs-7">{{ batch.transplant_date|date:"d M, Y" }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-5 text-muted">
+                                            <i class="fa fa-info-circle fa-2x d-block mb-2"></i> No active crop batches found in your production units.
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- TABLE 2: RECENT ORGANIC SPRAY RECORDS -->
+            <div class="col-12 col-lg-5">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="m-0 font-weight-bold text-success"><i class="fa fa-history me-2"></i>Recent IPM Treatment Operations</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for log in recent_sprays %}
+                            <div class="list-group-item p-3">
+                                <div class="d-flex w-100 justify-content-between mb-1">
+                                    <h6 class="mb-1 text-dark font-weight-bold">{{ log.remedy_used }}</h6>
+                                    <small class="text-muted fs-7 font-weight-bold">{{ log.date_applied|date:"d M" }}</small>
+                                </div>
+                                <p class="mb-1 fs-7 text-secondary">
+                                    <strong>Target:</strong> {{ log.target_pest_disease }} <br>
+                                    <strong>Location:</strong> {{ log.batch.location }}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted fs-8">Dosage: {{ log.dosage }}</small>
+                                    {% if log.application_type == 'CURA' %}
+                                        <span class="badge bg-danger-subtle text-danger px-2 py-1 fs-8">Curative</span>
+                                    {% else %}
+                                        <span class="badge bg-info-subtle text-info px-2 py-1 fs-8">Preventative</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="p-5 text-center text-muted">
+                                <i class="fa fa-check-circle text-success fa-2x d-block mb-2"></i> No chemical or organic applications recorded within this window.
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DAILY OPERATIONS TIMELINE CARD (Place under the spray logs card) -->
+            <div class="card shadow-sm border-0 mt-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-info"><i class="fa fa-stream me-2"></i>Daily Field & Canopy Activities</h6>
+                </div>
+                <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
+                    <div class="list-group list-group-flush">
+                        {% for act in recent_activities %}
+                        <div class="list-group-item p-3">
+                            <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                                <span class="badge bg-info-subtle text-info border font-weight-bold px-2 py-1 fs-8">
+                                    {{ act.get_activity_type_display }}
+                                </span>
+                                <small class="text-muted fs-8 font-weight-bold">{{ act.date_logged|date:"d M" }}</small>
+                            </div>
+                            <p class="mb-1 text-dark small font-weight-500">
+                                <strong>{{ act.batch.location }}:</strong> {{ act.description }}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center mt-2 fs-8 text-muted">
+                                <span><i class="fa fa-user me-1"></i>{{ act.logged_by.username }}</span>
+                                <span><i class="fa fa-clock me-1"></i>{{ act.man_hours }} hrs spent</span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="p-5 text-center text-muted">
+                            <i class="fa fa-tasks fa-2x d-block mb-2"></i> No cultural management tasks logged today.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABLE 3: RECENT HARVEST ENTRIES -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="m-0 font-weight-bold text-warning"><i class="fa fa-boxes-stacked me-2"></i>Recent Crop Harvest Log (Field Records)</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light text-uppercase fs-7 font-weight-bold text-muted">
+                                        <tr>
+                                            <th class="ps-3">Date</th>
+                                            <th>Location & Crop</th>
+                                            <th>Quantity Picked</th>
+                                            <th>Quality (Grade A)</th>
+                                            <th>Logged By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for harvest in recent_harvests %}
+                                        <tr>
+                                            <td class="ps-3 font-weight-bold text-dark">{{ harvest.date_harvested|date:"d M, Y" }}</td>
+                                            <td>
+                                                <span class="font-weight-bold">{{ harvest.batch.batch_zone_or_location }}{{ harvest.batch.location }}</span>
+                                                <small class="text-muted d-block">{{ harvest.batch.get_crop_type_display }} ({{ harvest.batch.variety }})</small>
+                                            </td>
+                                            <td class="font-weight-bold text-success">{{ harvest.quantity_harvested }} KG</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="me-2">{{ harvest.grade_a_percentage }}%</span>
+                                                    <div class="progress w-50" style="height: 6px;">
+                                                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ harvest.grade_a_percentage }}%;"></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-muted fs-7">{{ harvest.logged_by.get_full_name|default:harvest.logged_by.username }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="5" class="text-center py-4 text-muted">No harvest data collected for this window.</td>
+                                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================================
+    MODALS SECTION (Place at absolute bottom of page to prevent mobile dim blocks)
+========================================================================== -->
+
+<!-- Modal 1: Log Transplant -->
+<div class="modal fade" id="transplantModal" tabindex="-1" aria-hidden="true" data-bs-focus="false" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title font-weight-bold text-dark"><i class="fa fa-seedling text-primary me-2"></i>Log New Crop Cycle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form hx-post="{% url 'greenhouse:greenhouse_dashboard' %}" 
+                hx-target="#dashboard-tables-container" 
+                hx-select="#dashboard-tables-container" 
+                hx-swap="innerHTML"
+                hx-indicator="#loading-spinner">
+
+                {% csrf_token %}
+
+                <!-- Hidden indicator token for view routing -->
+                <input type="hidden" name="submit_crop" value="true">
+
+                <div class="modal-body">
+                    {{ crop_form.as_p }}
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary text-uppercase fs-7" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="submit_crop" class="btn btn-primary text-uppercase fs-7">Initialize Batch</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Record Spray -->
+<div class="modal fade" id="sprayModal" tabindex="-1" aria-hidden="true" data-bs-focus="false" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title font-weight-bold text-dark"><i class="fa fa-spray-can text-success me-2"></i>Record Organic Application</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form hx-post="{% url 'greenhouse:greenhouse_dashboard' %}" 
+                hx-target="#dashboard-tables-container" 
+                hx-select="#dashboard-tables-container" 
+                hx-swap="innerHTML"
+                hx-indicator="#loading-spinner">
+                {% csrf_token %}
+
+                <!-- Hidden indicator token for view routing -->
+                <input type="hidden" name="submit_spray" value="true">
+
+                <div class="modal-body">
+                    {{ spray_form.as_p }}
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary text-uppercase fs-7" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="submit_spray" class="btn btn-success text-uppercase fs-7">Log Application</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Modal 3: Record Harvest Input -->
+<div class="modal fade" id="harvestModal" tabindex="-1" aria-hidden="true" data-bs-focus="false" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title font-weight-bold text-dark"><i class="fa fa-basket-shopping text-warning me-2"></i>Record Field Harvest</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <!-- CORRECTED FORM WRAPPER -->
+            <form hx-post="{% url 'greenhouse:greenhouse_dashboard' %}" 
+                hx-target="#dashboard-tables-container" 
+                hx-swap="innerHTML" 
+                hx-select="#dashboard-tables-container"
+                hx-indicator="#loading-spinner"> 
+                
+
+                {% csrf_token %}
+                <!-- This hidden input safely guarantees Django sees 'submit_harvest' via HTMX -->
+                <input type="hidden" name="submit_harvest" value="true">
+
+                <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label font-weight-bold small text-muted">Select Active Crop Cycle</label>
+                    {{ harvest_form.batch }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label font-weight-bold small text-muted">Date Harvested</label>
+                    {{ harvest_form.date_harvested }}
+                </div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label class="form-label font-weight-bold small text-muted">Total Weight (KG)</label>
+                            {{ harvest_form.quantity_harvested }}
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label class="form-label font-weight-bold small text-muted">Grade A Premium %</label>
+                            {{ harvest_form.grade_a_percentage }}
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label font-weight-bold small text-muted">Remarks / Quality Notes</label>
+                    {{ harvest_form.remarks }}
+                </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                <!-- Optional: Ensure this spinner div exists somewhere or remove the indicator attribute -->
+                <div id="loading-spinner" class="htmx-indicator spinner-border spinner-border-sm text-warning me-2" role="status" style="display:none;"></div>
+                
+                <button type="button" class="btn btn-secondary text-uppercase fs-7" data-bs-dismiss="modal">Cancel</button>
+                <!-- Removed name="submit_harvest" from here to prevent conflicts -->
+                <button type="submit" class="btn btn-warning text-dark text-uppercase fs-7 font-weight-bold">Save Harvest Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Modal 4: Log Daily Maintenance Activity -->
+<div class="modal fade" id="activityModal" tabindex="-1" aria-hidden="true" data-bs-focus="false" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title font-weight-bold text-dark"><i class="fa fa-clipboard-list text-info me-2"></i>Log Canopy / Field Operation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form hx-post="{% url 'greenhouse:greenhouse_dashboard' %}" 
+                hx-target="#dashboard-tables-container" 
+                hx-select="#dashboard-tables-container" 
+                hx-swap="innerHTML"
+                hx-indicator="#loading-spinner">
+                {% csrf_token %}
+
+                <!-- Hidden indicator token for view routing -->
+                <input type="hidden" name="submit_activity" value="true">
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold small text-muted">Select Affected Bay/Crop</label>
+                        {{ activity_form.batch }}
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-8">
+                            <div class="mb-3">
+                                <label class="form-label font-weight-bold small text-muted">Operation Type</label>
+                                {{ activity_form.activity_type }}
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="mb-3">
+                                <label class="form-label font-weight-bold small text-muted">Labor Hours</label>
+                                {{ activity_form.man_hours }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold small text-muted">Work Specifications / Observations</label>
+                        {{ activity_form.description }}
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary text-uppercase fs-7" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="submit_activity" class="btn btn-info text-white text-uppercase fs-7 font-weight-bold">Save Field Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

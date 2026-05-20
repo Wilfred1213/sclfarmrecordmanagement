@@ -1,0 +1,318 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCL Farm Management</title>
+
+    <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Add this inside your <head> tag -->
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+    {% comment %} <script src="https://unpkg.com/htmx.org@1.9.10"></script> {% endcomment %}
+    <script>
+        // Safe Form Reset & Modal Hiding on Successful HTMX Processing
+        document.addEventListener("htmx:afterOnLoad", function(evt) {
+            if (evt.detail.xhr.status === 200) {
+                // ONLY reset forms that were actually submitted (prevents resetting other unsubmitted modal forms)
+                if (evt.detail.element && evt.detail.element.tagName === "FORM") {
+                    evt.detail.element.reset();
+                }
+    
+                // Automatically close open Bootstrap modals safely
+                const modals = document.querySelectorAll('.modal.show');
+                modals.forEach(modal => {
+                    // Check if Bootstrap's JS library is initialized before calling it
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        const modalInstance = bootstrap.Modal.getInstance(modal);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+
+
+<style>
+    :root { 
+        --sidebar-width: 250px; 
+        --farm-green: #2d5a27; 
+    }
+    
+    /* =========================
+       GENERAL
+    ========================= */
+    body { 
+        background: #f8f9fa; 
+        overflow-x: hidden; 
+        
+    }
+    
+    
+    /* =========================
+       SIDEBAR
+    ========================= */
+    #sidebar { 
+        width: var(--sidebar-width); 
+        height: 100vh; 
+        position: fixed; 
+        background: var(--farm-green); 
+        color: white; 
+        transition: 0.3s;
+    
+        /* LOWER THAN MODAL */
+        z-index: 1030;
+    }
+    
+    #sidebar .nav-link { 
+        color: rgba(255,255,255,0.8); 
+        padding: 15px; 
+        border-bottom: 1px solid rgba(255,255,255,0.1); 
+    }
+    
+    #sidebar .nav-link:hover,
+    #sidebar .nav-link.active { 
+        background: #3a7532; 
+        color: white; 
+    }
+    
+    
+    /* =========================
+       MAIN CONTENT
+    ========================= */
+    #content { 
+        margin-left: var(--sidebar-width); 
+        padding: 20px; 
+        transition: 0.3s;
+    }
+    
+    
+    /* =========================
+       MOBILE VIEW
+    ========================= */
+    @media (max-width: 768px) {
+    
+        #sidebar { 
+            margin-left: calc(-1 * var(--sidebar-width)); 
+            box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+        }
+    
+        #sidebar.active { 
+            margin-left: 0; 
+        }
+    
+        #content { 
+            margin-left: 0;
+    
+            /* REMOVE STACKING ISSUE */
+            position: relative;
+            z-index: auto;
+        }
+    }
+    
+    
+    /* =========================
+       FLOATING ACTION BUTTON
+    ========================= */
+    .fab-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+    
+        /* BELOW MODAL */
+        z-index: 1040;
+    }
+    
+    .fab-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    
+    
+    /* =========================
+       BOOTSTRAP MODAL FIX
+    ========================= */
+    
+    /* Modal should always be above everything */
+    .modal {
+        z-index: 99999 !important;
+    }
+    
+    .modal-backdrop {
+        z-index: 99998 !important;
+    }
+    
+    /* Prevent bootstrap/mobile conflicts */
+    body.modal-open {
+        overflow: hidden !important;
+        padding-right: 0 !important;
+    }
+    
+    
+    /* =========================
+       MOBILE MODAL FIX
+    ========================= */
+    @media (max-width: 768px) {
+    
+        .modal.fade .modal-dialog {
+            transform: none !important;
+        }
+    
+        .modal-dialog {
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 100vh !important;
+        }
+    
+        .modal-content {
+            height: 100vh !important;
+            border-radius: 0 !important;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+    
+        .modal-header {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 2;
+            border-bottom: 1px solid #dee2e6;
+        }
+    
+        .modal-body {
+            overflow-y: auto;
+            flex: 1 1 auto;
+            padding-bottom: 100px;
+        }
+    
+        .modal-footer {
+            position: sticky;
+            bottom: 0;
+            background: #fff;
+            z-index: 2;
+            border-top: 1px solid #dee2e6;
+        }
+    }
+    
+</style>    
+   
+</head>
+<body>
+
+    <nav id="sidebar">
+        <div class="p-4 text-center">
+            <h4>SCL FARM</h4>
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item"><a href="/" class="nav-link"><i class="fa fa-home me-2"></i> Dashboard</a></li>
+            <li class="nav-item"><a href="{% url 'inventory:inventory_dashboard' %}" class="nav-link"><i class="fa fa-warehouse me-2"></i> Store (Inventory)</a></li>
+            <li class="nav-item"><a href="{% url 'greenhouse:greenhouse_dashboard' %}" class="nav-link active"><i class="fa fa-leaf me-2"></i> Greenhouse</a></li>
+            <li class="nav-item"><a href="{% url 'livestock:livestock_dashboard' %}" class="nav-link"><i class="fa fa-cow me-2"></i> Livestock</a></li>
+            <li class="nav-item"><a href="{% url 'medical:staff_medical_dashboard' %}" class="nav-link"><i class="fa fa-medkit me-2"></i> Medical Centre</a></li>
+            <li class="nav-item"><a href="/factory/" class="nav-link"><i class="fa fa-industry me-2"></i> Processing Factory</a></li>
+        </ul>
+    </nav>
+
+    <div id="content">
+        <nav class="navbar navbar-light bg-white mb-4 shadow-sm px-3 d-md-none">
+            <button class="btn btn-success" id="sidebarCollapse"><i class="fa fa-bars"></i></button>
+            <span class="navbar-brand mb-0 h1">SCL Farm</span>
+        </nav>
+
+        {% block content %}
+        {% endblock %}
+
+        
+        <!-- Toast Container positioned fixed in the top-right or bottom-right of the viewport -->
+        <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+            <div id="htmx-toast" class="toast align-items-center text-white border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fa fa-info-circle me-2"></i><span id="toast-message"></span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        // Sidebar toggle control
+        const sidebarCollapseBtn = document.getElementById('sidebarCollapse');
+        if (sidebarCollapseBtn) {
+            sidebarCollapseBtn.onclick = function() {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar) sidebar.classList.toggle('active');
+            };
+        }
+    </script>
+    
+    <script>
+        // 1. DYNAMIC SUBMIT BUTTON LOADING SPINNERS
+        document.addEventListener("htmx:configRequest", function(evt) {
+            let triggerEl = evt.detail.element;
+            if (!triggerEl) return;
+    
+            // Find the submit button for either the form or an isolated button request
+            let submitBtn = triggerEl.tagName === 'FORM' ? triggerEl.querySelector('button[type="submit"]') : triggerEl.closest('button');
+            
+            if (submitBtn && !submitBtn.disabled) {
+                submitBtn.setAttribute("data-original-text", submitBtn.innerHTML);
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Processing...`;
+            }
+        });
+    
+        // Restore button text if an error happens or request finishes without swapping out the element
+        document.addEventListener("htmx:afterRequest", function(evt) {
+            let triggerEl = evt.detail.element;
+            if (!triggerEl) return;
+    
+            let submitBtn = triggerEl.tagName === 'FORM' ? triggerEl.querySelector('button[type="submit"]') : triggerEl.closest('button');
+            if (submitBtn && submitBtn.hasAttribute("data-original-text")) {
+                submitBtn.innerHTML = submitBtn.getAttribute("data-original-text");
+                submitBtn.disabled = false;
+            }
+        });
+    
+        // 2. SAFE POP-UP TOAST TRIGGERING
+        document.addEventListener("htmx:afterOnLoad", function(evt) {
+            let message = evt.detail.xhr.getResponseHeader("X-Toast-Message");
+            let status = evt.detail.xhr.getResponseHeader("X-Toast-Status");
+            
+            if (message) {
+                let toastEl = document.getElementById('htmx-toast');
+                let toastMessage = document.getElementById('toast-message');
+                
+                // ✅ CRITICAL SAFETY CHECK: Only proceed if both elements exist on the current page
+                if (toastEl && toastMessage) {
+                    toastEl.className = `toast align-items-center text-white border-0 shadow bg-${status === 'error' ? 'danger' : 'success'}`;
+                    toastMessage.innerText = message;
+                    
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+                        let bsToast = new bootstrap.Toast(toastEl, { delay: 4000 });
+                        bsToast.show();
+                    }
+                } else {
+                    // Clean fallback to standard console logging or alert if your UI lacks the toast component
+                    console.log(`Notification: ${message} (${status})`);
+                }
+            }
+        });
+    </script>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

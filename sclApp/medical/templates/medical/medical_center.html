@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Main Dashboard Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 bg-dark text-white p-3 rounded shadow-sm gap-3">
+        <div>
+            <h2 class="mb-0 text-white"><i class="fa fa-user-md me-2 text-info"></i>Staff Health & Safety Clinic</h2>
+            <small class="text-muted">Occupational health tracking, work accident logs, and sick leave clearances</small>
+        </div>
+        <div class="btn-group shadow-sm">
+            <button type="button" class="btn btn-info text-white btn-sm" data-bs-toggle="modal" data-bs-target="#openCaseModal">
+                <i class="fa fa-file-medical me-1"></i> Log Staff Incident/Illness
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#administerMedModal">
+                <i class="fa fa-band-aid me-1"></i> Log Clinical Action
+            </button>
+        </div>
+    </div>
+
+    <!-- HTMX Dynamic Area -->
+    <div id="staff-medical-container">
+        {% include 'medical/medical_inner.html' %}
+    </div>
+</div>
+
+<!-- FORM MODAL 1: OPEN CASE -->
+<div class="modal fade" id="openCaseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form hx-post="{% url 'medical:staff_medical_dashboard' %}" hx-target="#staff-medical-container" hx-swap="innerHTML" onsubmit="bootstrap.Modal.getInstance(document.getElementById('openCaseModal')).hide()">
+                {% csrf_token %}
+                <input type="hidden" name="open_case" value="true">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="fa fa-user-plus me-2"></i>New Personnel Health Record</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Affected Employee</label>
+                            {{ case_form.staff_member }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Incident Nature / Case Classification</label>
+                            {{ case_form.case_type }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Chief Complaint (Short Summary)</label>
+                        {{ case_form.chief_complaint }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Detailed Clinical Signs / Accident Sequence</label>
+                        {{ case_form.clinical_notes }}
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Duty Status Option</label>
+                            {{ case_form.status }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Prescribed Sick Leave (Days)</label>
+                            {{ case_form.recommended_sick_days }}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info text-white">Commit Case File</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- FORM MODAL 2: MEDICAL ACTION -->
+<div class="modal fade" id="administerMedModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form hx-post="{% url 'medical:staff_medical_dashboard' %}" hx-target="#staff-medical-container" hx-swap="innerHTML" onsubmit="bootstrap.Modal.getInstance(document.getElementById('administerMedModal')).hide()">
+                {% csrf_token %}
+                <input type="hidden" name="log_treatment" value="true">
+                <div class="modal-header bg-secondary text-white">
+                    <h5 class="modal-title"><i class="fa fa-heartbeat me-2"></i>Add Medical Treatment / Action</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Select Active Worker File</label>
+                        {{ treatment_form.medical_case }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Medication / Treatment Rendered</label>
+                        {{ treatment_form.medication_or_first_aid }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Dosage or Clinical Directive</label>
+                        {{ treatment_form.dosage_or_action }}
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Attending Officer</label>
+                            {{ treatment_form.administered_by }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Review Date (Optional)</label>
+                            {{ treatment_form.next_review_date }}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Medical Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

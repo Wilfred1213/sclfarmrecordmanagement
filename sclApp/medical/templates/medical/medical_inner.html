@@ -1,0 +1,122 @@
+<!-- Live Operational Metrics Grid -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 bg-info text-white h-100">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <h6 class="text-uppercase mb-1 small text-white-50">Active Health Files</h6>
+                    <h2 class="mb-0 fw-bold">{{ active_incidents_count }} <span class="fs-6 fw-normal">Staff Under Watch</span></h2>
+                </div>
+                <i class="fa fa-notes-medical fa-2x text-white-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 bg-warning text-dark h-100">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <h6 class="text-uppercase mb-1 small text-dark-50">Personnel Temporarily Off-Duty</h6>
+                    <h2 class="mb-0 fw-bold">{{ on_sick_leave_count }} <span class="fs-6 fw-normal">On Approved Sick Leave</span></h2>
+                </div>
+                <i class="fa fa-bed fa-2x text-dark-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Main Ledger Registry -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light border-0 py-3">
+                <h5 class="mb-0 fw-bold text-dark"><i class="fa fa-users text-secondary me-2"></i>Staff Medical Incident Log</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Staff Name</th>
+                                <th>Case Classification</th>
+                                <th>Chief Complaint</th>
+                                <th>Incident Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for case in cases %}
+                            <tr>
+                                <td>
+                                    <span class="fw-bold text-dark d-block">
+                                        {{ case.staff_member.get_full_name|default:case.staff_member.username }}
+                                    </span>
+                                    <small class="text-muted text-uppercase" style="font-size:0.7rem;">ID: #{{ case.staff_member.id }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        {{ case.get_case_type_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-dark d-block mb-0 font-monospace small">{{ case.chief_complaint }}</span>
+                                    {% if case.recommended_sick_days > 0 %}
+                                        <small class="text-danger"><i class="fa fa-calendar-alt me-1"></i>Return date: {{ case.return_to_work_date|date:"d M" }}</small>
+                                    {% endif %}
+                                </td>
+                                <td><span class="small text-secondary">{{ case.incident_date|date:"d M, Y" }}</span></td>
+                                <td>
+                                    {% if case.status == 'OPEN' %}
+                                        <span class="badge bg-info px-2 py-1 text-white">Active Observation</span>
+                                    {% elif case.status == 'SICK_LEAVE' %}
+                                        <span class="badge bg-danger px-2 py-1">On Sick Leave</span>
+                                    {% else %}
+                                        <span class="badge bg-success px-2 py-1"><i class="fa fa-check-circle me-1"></i>Fit for Duty</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="fa fa-heart fa-2x d-block mb-2 text-muted"></i> Perfect Safety Record! No staff incident logs on record.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Treatment Timeline Streams Sidebar -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light border-0 py-3">
+                <h6 class="mb-0 fw-bold"><i class="fa fa-history text-primary me-2"></i>Clinical Actions Feed</h6>
+            </div>
+            <div class="card-body p-0" style="max-height: 520px; overflow-y: auto;">
+                <ul class="list-group list-group-flush small">
+                    {% for log in recent_treatments %}
+                    <li class="list-group-item p-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong class="text-dark d-block">{{ log.medication_or_first_aid }}</strong>
+                                <small class="text-secondary">Staff: {{ log.medical_case.staff_member.get_full_name|default:log.medical_case.staff_member.username }}</small>
+                            </div>
+                            <small class="text-muted bg-light px-2 py-1 rounded">{{ log.treatment_date|date:"d M H:i" }}</small>
+                        </div>
+                        <div class="mt-2 d-flex justify-content-between text-secondary" style="font-size: 0.8rem;">
+                            <span>Action: <strong class="text-dark">{{ log.dosage_or_action }}</strong></span>
+                        </div>
+                        <div class="mt-1 small text-muted">
+                            Logged by: <span class="fw-bold">{{ log.administered_by }}</span>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-center py-4 text-muted">No diagnostic actions recorded yet.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
