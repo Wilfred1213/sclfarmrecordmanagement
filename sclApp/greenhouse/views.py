@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from .models import ProductionArea, CropBatch, SprayingLog, HarvestLog, DailyActivityLog
 from .forms import CropBatchForm, SprayingLogForm, HarvestLogForm, DailyActivityLogForm
 
-@login_required
+# @login_required
 def greenhouse_dashboard(request):
     # Base queries for data display
     active_batches = CropBatch.objects.filter(is_harvested=False).select_related('location')

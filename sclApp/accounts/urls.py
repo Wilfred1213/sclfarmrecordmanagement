@@ -5,5 +5,5 @@ app_name = 'authentications' # This must match the namespace in your main urls.p
 
 urlpatterns = [
     # Add your login/profile paths here later
-    path('login/', views.login, name='login'),
+    path('loggin/', views.loggin, name='loggin'),
 ]

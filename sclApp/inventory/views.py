@@ -10,7 +10,7 @@ from django.utils import timezone
 # Create your views here.
 
 
-@login_required
+# @login_required
 def inventory_dashboard(request):
     # Base Querysets needed to populate the dashboard interface
     items = Item.objects.all().order_by('category', 'name')
@@ -221,7 +221,7 @@ def mark_as_returned(request, transaction_id):
 
 
 
-@login_required
+# @login_required
 def mark_as_returned(request, transaction_id):
 
     transaction = get_object_or_404(StoreTransaction, id=transaction_id)
